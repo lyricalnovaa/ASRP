@@ -1318,8 +1318,6 @@ def extract_codes_from_message(message_text):
     found_codes = re.findall(r"10-\d{1,2}", message_text)
     return [code for code in found_codes if code in codes]
 
-tts_engine = pyttsx3.init()
-
 async def send_dispatch_tts(message_text):
     mp3_file = "dispatch.mp3"
     
