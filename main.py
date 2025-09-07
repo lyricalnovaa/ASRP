@@ -1407,7 +1407,9 @@ async def tts_test(ctx, *, text):
         await send_dispatch_tts(text)
         await ctx.send("✅ TTS played!")
     else:
-        await ctx.send("❌ You must be in a VC to test TTS.")from llama_cpp import Llama
+        await ctx.send("❌ You must be in a VC to test TTS.")
+        
+from llama_cpp import Llama
 
 llm = Llama(model_path="mpt-7b-instruct.ggmlv3.q4_0.bin")
 
