@@ -21,7 +21,7 @@ FFMPEG_DIR = "ffmpeg"
 FFMPEG_BINARY = os.path.join(FFMPEG_DIR, "ffmpeg")
 FFMPEG_URL = "https://github.com/lyricalnovaa/ASRP/releases/download/DiscordFFMPEG/ffmpeg"  # your release binary
 
-print(FFMPEG_DIR)
+print(FFMPEG_BINARY)
 
 def ensure_ffmpeg():
     if os.path.exists(FFMPEG_BINARY):
