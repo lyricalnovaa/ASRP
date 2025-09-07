@@ -1,14 +1,21 @@
 import os
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import requests
 from keep_alive import keep_alive
 import json
 import datetime
+from discord import FFmpegPCMAudio
+from google.cloud import texttospeech
+import re
+
+
+RTO_CHANNEL_ID = 1341573057952878674
 # Load secrets from environment variables
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 ERLC_API_KEY = os.getenv("ERLC_API_KEY")
 SERVER_KEY = os.getenv("SERVER_KEY")
+SSD_ACTIVE = False
 
 # Check if TOKEN is set correctly
 if TOKEN is None:
@@ -1226,6 +1233,118 @@ async def help(ctx, *args):
 
         await ctx.send(embed=embed)
 
+codes = {}
+with open("codes.txt", "r") as f:
+    for line in f:
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        try:
+            code_number, description = line.split(" ", 1)
+            codes[code_number] = description
+        except ValueError:
+            print(f"Skipping invalid line: {line}")
+print("Loaded codes:", codes)
+
+# ---- UNIT TABLE ----
+units = {}  # key: callsign, value: dict with status info
+
+def init_unit(callsign):
+    if callsign not in units:
+        units[callsign] = {
+            "Status": "10-8",           # default available
+            "Current_Call": None,       # call they originated
+            "Attached_To_Call": None,   # assisting
+            "Locked_Until_10_8": False # prevents multi-assign
+        }
+
+# ---- HELPER FUNCTIONS ----
+def extract_codes_from_message(message_text):
+    found_codes = re.findall(r"10-\d{1,2}", message_text)
+    return [code for code in found_codes if code in codes]
+
+async def send_dispatch_tts(message_text):
+    client = texttospeech.TextToSpeechClient()
+    synthesis_input = texttospeech.SynthesisInput(text=message_text)
+    voice = texttospeech.VoiceSelectionParams(
+        language_code="en-US",
+        name="en-US-Wavenet-F",
+        ssml_gender=texttospeech.SsmlVoiceGender.FEMALE,
+    )
+    audio_config = texttospeech.AudioConfig(audio_encoding=texttospeech.AudioEncoding.MP3)
+    response = client.synthesize_speech(input=synthesis_input, voice=voice, audio_config=audio_config)
+    
+    with open("dispatch.mp3", "wb") as out:
+        out.write(response.audio_content)
+    
+    # Play in Police RTO by ID
+    for vc in bot.voice_clients:
+        if vc.channel.id == RTO_CHANNEL_ID:
+            vc.play(FFmpegPCMAudio("dispatch.mp3"))
+
+async def ensure_police_rto():
+    if SSD_ACTIVE:
+        return  # don't join during SSD
+    
+    for guild in bot.guilds:
+        police_channel = guild.get_channel(RTO_CHANNEL_ID)
+        if police_channel and not any(vc.channel.id == RTO_CHANNEL_ID for vc in bot.voice_clients):
+            await police_channel.connect()
+
+# ---- DISPATCH LOGIC ----
+async def process_voice_command(speaker_callsign, message_text):
+    init_unit(speaker_callsign)
+    if "dispatch" not in message_text.lower():
+        return
+
+    message_text = message_text.lower()
+
+    if "show me on" in message_text:
+        await handle_dispatch_request(speaker_callsign, message_text)
+    elif "attach me to" in message_text:
+        await handle_attach_request(speaker_callsign, message_text)
+    elif "10-8" in message_text:
+        await handle_10_8(speaker_callsign)
+
+async def handle_dispatch_request(speaker_callsign, message_text):
+    requested_codes = extract_codes_from_message(message_text)
+    if not requested_codes:
+        await send_dispatch_tts(f"{speaker_callsign}, no valid codes detected.")
+        return
+
+    # Filter available units (10-8, not attached, not locked)
+    available_units = [cs for cs, u in units.items() 
+                       if u["Status"]=="10-8" and not u["Attached_To_Call"] and not u["Locked_Until_10_8"]]
+    if not available_units:
+        await send_dispatch_tts(f"No available units for request from {speaker_callsign}")
+        return
+
+    assigned_unit = available_units[0]
+    units[assigned_unit]["Attached_To_Call"] = f"Call by {speaker_callsign}"
+    units[assigned_unit]["Locked_Until_10_8"] = True
+
+    codes_text = ", ".join([f"{c} ({codes[c]})" for c in requested_codes])
+    await send_dispatch_tts(f"10-4, {assigned_unit} respond to {codes_text}")
+
+async def handle_attach_request(speaker_callsign, message_text):
+    init_unit(speaker_callsign)
+    # attach to last active call
+    active_calls = [u["Current_Call"] for u in units.values() if u["Current_Call"]]
+    if not active_calls:
+        await send_dispatch_tts(f"{speaker_callsign}, no active calls to attach to.")
+        return
+    call_to_attach = active_calls[-1]
+    units[speaker_callsign]["Attached_To_Call"] = call_to_attach
+    units[speaker_callsign]["Locked_Until_10_8"] = True
+    await send_dispatch_tts(f"{speaker_callsign} attached to call {call_to_attach}.")
+
+async def handle_10_8(speaker_callsign):
+    init_unit(speaker_callsign)
+    units[speaker_callsign]["Status"] = "10-8"
+    units[speaker_callsign]["Current_Call"] = None
+    units[speaker_callsign]["Attached_To_Call"] = None
+    units[speaker_callsign]["Locked_Until_10_8"] = False
+    await send_dispatch_tts(f"{speaker_callsign} is now 10-8 and available.")
 
 if __name__ == '__main__':
     keep_alive()
