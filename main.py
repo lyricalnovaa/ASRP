@@ -66,6 +66,7 @@ intents = discord.Intents.default()
 intents.message_content = True  # Enable the message content intent
 intents.members = True  # Enable server member intent, if needed
 intents.presences = True  # Enable presence intent, if needed
+intents.voice_states = True 
 
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 # Restrict bot to be used only in a specific server
