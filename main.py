@@ -21,6 +21,8 @@ FFMPEG_DIR = "ffmpeg"
 FFMPEG_BINARY = os.path.join(FFMPEG_DIR, "ffmpeg")
 FFMPEG_URL = "https://github.com/lyricalnovaa/ASRP/releases/download/DiscordFFMPEG/ffmpeg"  # your release binary
 
+print(FFMPEG_DIR)
+
 def ensure_ffmpeg():
     if os.path.exists(FFMPEG_BINARY):
         return FFMPEG_BINARY
@@ -84,9 +86,9 @@ async def on_ready():
     for guild in bot.guilds:
         print(f"Connected to: {guild.name} ({guild.id})")
         vc_channel = guild.get_channel(RTO_CHANNEL_ID)
-    if vc_channel and not bot.voice_clients:
-        await vc_channel.connect()
-        print(f"Joined VC: {vc_channel.name}")
+        if vc_channel and not bot.voice_clients:
+            await vc_channel.connect()
+            print(f"Joined VC: {vc_channel.name}")
 
 @bot.event
 async def on_member_update(before, after):
