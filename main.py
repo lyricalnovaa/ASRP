@@ -1307,6 +1307,7 @@ def extract_codes_from_message(message_text):
     return [code for code in found_codes if code in codes]
 
 async def send_dispatch_tts(message_text):
+    # Generate TTS
     client = texttospeech.TextToSpeechClient()
     synthesis_input = texttospeech.SynthesisInput(text=message_text)
     voice = texttospeech.VoiceSelectionParams(
@@ -1316,15 +1317,28 @@ async def send_dispatch_tts(message_text):
     )
     audio_config = texttospeech.AudioConfig(audio_encoding=texttospeech.AudioEncoding.MP3)
     response = client.synthesize_speech(input=synthesis_input, voice=voice, audio_config=audio_config)
-    
-    with open("dispatch.mp3", "wb") as out:
+
+    mp3_file = "dispatch.mp3"
+    with open(mp3_file, "wb") as out:
         out.write(response.audio_content)
-    
+
+    # Debug: check file exists & size
+    print(f"[TTS] Saved {mp3_file}, size: {os.path.getsize(mp3_file)} bytes")
+
+    # Get FFmpeg binary (download if missing)
+    ffmpeg_path = ensure_ffmpeg()
+
     # Play in Police RTO by ID
     for vc in bot.voice_clients:
         if vc.channel.id == RTO_CHANNEL_ID:
-            vc.play(FFmpegPCMAudio("dispatch.mp3"))
-
+            if vc.is_playing():
+                vc.stop()  # stop current audio
+            try:
+                vc.play(FFmpegPCMAudio(mp3_file, executable=ffmpeg_path))
+                print(f"[TTS] Playing in {vc.channel.name}")
+            except Exception as e:
+                print(f"[TTS ERROR] Failed to play audio: {e}")
+            
 async def ensure_police_rto():
     if SSD_ACTIVE:
         return  # don't join during SSD
