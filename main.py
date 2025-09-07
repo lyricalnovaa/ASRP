@@ -83,7 +83,7 @@ async def on_ready():
     print(f'Logged in as {bot.user}')
     for guild in bot.guilds:
         print(f"Connected to: {guild.name} ({guild.id})")
-        vc_channel = guild.get_channel(1341573539643265106)
+        vc_channel = guild.get_channel(1341573057952878674)
         if vc_channel:
             try:
                 await vc_channel.connect()
