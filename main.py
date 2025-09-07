@@ -17,6 +17,27 @@ ERLC_API_KEY = os.getenv("ERLC_API_KEY")
 SERVER_KEY = os.getenv("SERVER_KEY")
 SSD_ACTIVE = False
 
+FFMPEG_DIR = "ffmpeg"
+FFMPEG_BINARY = os.path.join(FFMPEG_DIR, "ffmpeg")
+FFMPEG_URL = "https://github.com/lyricalnovaa/ASRP/releases/download/DiscordFFMPEG/ffmpeg"  # your release binary
+
+def ensure_ffmpeg():
+    if os.path.exists(FFMPEG_BINARY):
+        return FFMPEG_BINARY
+
+    os.makedirs(FFMPEG_DIR, exist_ok=True)
+    print("Downloading FFmpeg...")
+    r = requests.get(FFMPEG_URL, stream=True)
+    r.raise_for_status()
+    with open(FFMPEG_BINARY, "wb") as f:
+        for chunk in r.iter_content(chunk_size=8192):
+            f.write(chunk)
+
+    os.chmod(FFMPEG_BINARY, 0o755)
+    print("FFmpeg ready!")
+    return FFMPEG_BINARY
+
+
 # Check if TOKEN is set correctly
 if TOKEN is None:
     raise ValueError("DISCORD_BOT_TOKEN environment variable is not set!")
