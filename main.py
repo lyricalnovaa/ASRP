@@ -1330,7 +1330,7 @@ async def send_dispatch_tts(message_text):
         if vc.channel.id == RTO_CHANNEL_ID:
             if vc.is_playing():
                 vc.stop()
-            vc.play(FFmpegPCMAudio(mp3_file))
+            vc.play(FFmpegPCMAudio(mp3_file, executable=FFMPEG_BINARY))
             print(f"[TTS] Playing in {vc.channel.name}")
 async def ensure_police_rto():
     if SSD_ACTIVE:
