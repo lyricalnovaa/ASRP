@@ -10,6 +10,7 @@ from google.cloud import texttospeech
 import re
 import tarfile
 import shutil
+import pyttsx3
 
 RTO_CHANNEL_ID = 1341573057952878674
 # Load secrets from environment variables
@@ -1317,37 +1318,29 @@ def extract_codes_from_message(message_text):
     found_codes = re.findall(r"10-\d{1,2}", message_text)
     return [code for code in found_codes if code in codes]
 
-async def send_dispatch_tts(message_text):
-    # Generate TTS MP3
-    client = texttospeech.TextToSpeechClient()
-    synthesis_input = texttospeech.SynthesisInput(text=message_text)
-    voice = texttospeech.VoiceSelectionParams(
-        language_code="en-US",
-        name="en-US-Wavenet-F",
-        ssml_gender=texttospeech.SsmlVoiceGender.FEMALE,
-    )
-    audio_config = texttospeech.AudioConfig(audio_encoding=texttospeech.AudioEncoding.MP3)
-    response = client.synthesize_speech(input=synthesis_input, voice=voice, audio_config=audio_config)
+tts_engine = pyttsx3.init()
 
-    mp3_file = os.path.join(os.getcwd(), "dispatch.mp3")
-    with open(mp3_file, "wb") as out:
-        out.write(response.audio_content)
+async def send_dispatch_tts(bot, message_text):
+    """
+    Sends TTS to your RTO voice channel using pyttsx3 only.
+    """
+    mp3_file = "dispatch.mp3"
 
+    # Generate MP3 using pyttsx3
+    tts_engine.save_to_file(message_text, mp3_file)
+    tts_engine.runAndWait()
     print(f"[TTS] Saved {mp3_file}, size: {os.path.getsize(mp3_file)} bytes")
-    ffmpeg_path = ensure_ffmpeg()
 
+    # Play in Police RTO by ID
     for vc in bot.voice_clients:
         if vc.channel.id == RTO_CHANNEL_ID:
             if vc.is_playing():
-                vc.stop()
+                vc.stop()  # stop current audio
             try:
-                vc.play(FFmpegPCMAudio(mp3_file, executable=ffmpeg_path),
-                        after=lambda e: print(f"[TTS ERROR] {e}" if e else "[TTS] Finished"))
+                vc.play(FFmpegPCMAudio(mp3_file, executable=ensure_ffmpeg()))
                 print(f"[TTS] Playing in {vc.channel.name}")
             except Exception as e:
-                print(f"[TTS ERROR] Failed to play: {e}")
-            break
-                     
+                print(f"[TTS ERROR] Failed to play audio: {e}")
 async def ensure_police_rto():
     if SSD_ACTIVE:
         return  # don't join during SSD
