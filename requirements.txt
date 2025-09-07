@@ -3,3 +3,4 @@ flask
 requests
 google-cloud-texttospeech
 PyNaCl
+pyttsx3
