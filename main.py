@@ -1404,10 +1404,32 @@ async def tts_test(ctx, *, text):
             await ctx.voice_client.move_to(channel)
         else:
             await channel.connect()
-        await send_dispatch_tts(text)  # make sure this uses FFMPEG_BINARY
+        await send_dispatch_tts(text)
         await ctx.send("✅ TTS played!")
     else:
-        await ctx.send("❌ You must be in a VC to test TTS.")
+        await ctx.send("❌ You must be in a VC to test TTS.")from llama_cpp import Llama
+
+llm = Llama(model_path="mpt-7b-instruct.ggmlv3.q4_0.bin")
+
+async def ai_dispatch_response(callsign, message_text):
+    prompt = f"""
+You are a police dispatcher AI. Respond naturally to the officer {callsign}.
+Interpret any 10-codes mentioned in the message and respond as a dispatcher would.
+Message: {message_text}
+"""
+    response = llm(prompt=prompt, max_tokens=150)
+    return response["choices"][0]["text"]
+
+async def ai_dispatch_tts(callsign, message_text):
+    ai_text = await ai_dispatch_response(callsign, message_text)
+    await send_dispatch_tts(ai_text)
+
+# ---------------- DISPATCH LOGIC ----------------
+async def process_voice_command(speaker_callsign, message_text):
+    init_unit(speaker_callsign)
+    if "dispatch" not in message_text.lower():
+        return
+    await ai_dispatch_tts(speaker_callsign, message_text)
 
 if __name__ == '__main__':
     keep_alive()
