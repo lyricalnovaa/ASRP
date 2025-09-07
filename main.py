@@ -1278,6 +1278,20 @@ print("Loaded codes:", codes)
 # ---- UNIT TABLE ----
 units = {}  # key: callsign, value: dict with status info
 
+@bot.command()
+@is_hr()  # your existing HR check
+async def join(ctx):
+    """Forces the bot to join the VC you're in."""
+    if ctx.author.voice:  # make sure user is in a VC
+        channel = ctx.author.voice.channel
+        if ctx.voice_client:  # already connected somewhere
+            await ctx.voice_client.move_to(channel)
+        else:
+            await channel.connect()
+        await ctx.send(f"✅ Joined {channel.name}")
+    else:
+        await ctx.send("❌ You must be in a VC for me to join.")
+
 def init_unit(callsign):
     if callsign not in units:
         units[callsign] = {
