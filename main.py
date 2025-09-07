@@ -1,4 +1,4 @@
-import os
+.import os
 import discord
 from discord.ext import commands, tasks
 import requests
@@ -82,6 +82,13 @@ async def on_ready():
     print(f'Logged in as {bot.user}')
     for guild in bot.guilds:
         print(f"Connected to: {guild.name} ({guild.id})")
+        vc_channel = guild.get_channel(1341573539643265106)
+        if vc_channel:
+            try:
+                await vc_channel.connect()
+                print(f"Joined VC: {vc_channel.name}")
+            except Exception as e:
+                print(f"Failed to join VC: {e}")
 
 
 @bot.event
@@ -1366,26 +1373,6 @@ async def handle_10_8(speaker_callsign):
     units[speaker_callsign]["Attached_To_Call"] = None
     units[speaker_callsign]["Locked_Until_10_8"] = False
     await send_dispatch_tts(f"{speaker_callsign} is now 10-8 and available.")
-
-@bot.command()
-async def play(ctx, url):
-    if not ctx.author.voice:
-        await ctx.send("You need to be in a VC first.")
-        return
-
-    channel = ctx.author.voice.channel
-
-    # Join if not already connected
-    if ctx.voice_client is None:
-        vc = await channel.connect()
-    else:
-        vc = ctx.voice_client
-        if vc.channel != channel:
-            await vc.move_to(channel)
-
-    # Now play
-    vc.stop()  # stop any current audio
-    vc.play(discord.FFmpegPCMAudio(source=url, executable="C:/ffmpeg/bin/ffmpeg.exe"))
 
 if __name__ == '__main__':
     keep_alive()
