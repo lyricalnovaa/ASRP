@@ -4,4 +4,4 @@ requests
 google-cloud-texttospeech
 PyNaCl
 pyttsx3
-espeak-ng-python
+edge_tts
