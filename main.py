@@ -10,7 +10,7 @@ from google.cloud import texttospeech
 import re
 import tarfile
 import shutil
-import pyttsx3
+import edge_tts
 
 RTO_CHANNEL_ID = 1341573057952878674
 # Load secrets from environment variables
@@ -1320,27 +1320,20 @@ def extract_codes_from_message(message_text):
 
 tts_engine = pyttsx3.init()
 
-async def send_dispatch_tts(bot, message_text):
-    """
-    Sends TTS to your RTO voice channel using pyttsx3 only.
-    """
+async def send_dispatch_tts(message_text):
     mp3_file = "dispatch.mp3"
-
-    # Generate MP3 using pyttsx3
-    tts_engine.save_to_file(message_text, mp3_file)
-    tts_engine.runAndWait()
-    print(f"[TTS] Saved {mp3_file}, size: {os.path.getsize(mp3_file)} bytes")
-
-    # Play in Police RTO by ID
+    
+    # Generate TTS with Edge
+    communicate = edge_tts.Communicate(message_text, voice="en-US-AriaNeural")
+    await communicate.save(mp3_file)
+    
+    # Play in the Police RTO VC
     for vc in bot.voice_clients:
         if vc.channel.id == RTO_CHANNEL_ID:
             if vc.is_playing():
-                vc.stop()  # stop current audio
-            try:
-                vc.play(FFmpegPCMAudio(mp3_file, executable=ensure_ffmpeg()))
-                print(f"[TTS] Playing in {vc.channel.name}")
-            except Exception as e:
-                print(f"[TTS ERROR] Failed to play audio: {e}")
+                vc.stop()
+            vc.play(FFmpegPCMAudio(mp3_file))
+            print(f"[TTS] Playing in {vc.channel.name}")
 async def ensure_police_rto():
     if SSD_ACTIVE:
         return  # don't join during SSD
