@@ -18,7 +18,7 @@ ERLC_API_KEY = os.getenv("ERLC_API_KEY")
 SERVER_KEY = os.getenv("SERVER_KEY")
 SSD_ACTIVE = False
 
-FFMPEG_DIR = "ffmpeg"
+FFMPEG_DIR = os.path.join(os.getcwd(), "ffmpeg")
 FFMPEG_BINARY = os.path.join(FFMPEG_DIR, "ffmpeg")
 FFMPEG_URL = "https://github.com/lyricalnovaa/ASRP/releases/download/DiscordFFMPEG/ffmpeg-release-amd64-static.tar.xz?raw=true"
 
@@ -28,30 +28,28 @@ def ensure_ffmpeg():
 
     os.makedirs(FFMPEG_DIR, exist_ok=True)
     tar_path = os.path.join(FFMPEG_DIR, "ffmpeg.tar.xz")
-    
+
     print("Downloading FFmpeg tar.xz release...")
     r = requests.get(FFMPEG_URL, stream=True)
     r.raise_for_status()
     with open(tar_path, "wb") as f:
         for chunk in r.iter_content(chunk_size=8192):
             f.write(chunk)
-    
+
     print("Extracting ffmpeg binary from tar...")
     with tarfile.open(tar_path, "r:xz") as tar:
         for member in tar.getmembers():
-            # Find the actual ffmpeg binary
             if os.path.basename(member.name) == "ffmpeg":
                 tar.extract(member, FFMPEG_DIR)
                 extracted_path = os.path.join(FFMPEG_DIR, member.name)
                 shutil.move(extracted_path, FFMPEG_BINARY)
                 break
-    
-    os.remove(tar_path)  # cleanup tar
+
+    os.remove(tar_path)
     os.chmod(FFMPEG_BINARY, 0o755)
     print("FFmpeg ready!")
     return FFMPEG_BINARY
 
-# Call it once at startup
 ensure_ffmpeg()
 
 
@@ -1320,7 +1318,7 @@ def extract_codes_from_message(message_text):
     return [code for code in found_codes if code in codes]
 
 async def send_dispatch_tts(message_text):
-    # Generate TTS
+    # Generate TTS MP3
     client = texttospeech.TextToSpeechClient()
     synthesis_input = texttospeech.SynthesisInput(text=message_text)
     voice = texttospeech.VoiceSelectionParams(
@@ -1331,27 +1329,25 @@ async def send_dispatch_tts(message_text):
     audio_config = texttospeech.AudioConfig(audio_encoding=texttospeech.AudioEncoding.MP3)
     response = client.synthesize_speech(input=synthesis_input, voice=voice, audio_config=audio_config)
 
-    mp3_file = "dispatch.mp3"
+    mp3_file = os.path.join(os.getcwd(), "dispatch.mp3")
     with open(mp3_file, "wb") as out:
         out.write(response.audio_content)
 
-    # Debug: check file exists & size
     print(f"[TTS] Saved {mp3_file}, size: {os.path.getsize(mp3_file)} bytes")
-
-    # Get FFmpeg binary (download if missing)
     ffmpeg_path = ensure_ffmpeg()
 
-    # Play in Police RTO by ID
     for vc in bot.voice_clients:
         if vc.channel.id == RTO_CHANNEL_ID:
             if vc.is_playing():
-                vc.stop()  # stop current audio
+                vc.stop()
             try:
-                vc.play(FFmpegPCMAudio(mp3_file, executable=ffmpeg_path))
+                vc.play(FFmpegPCMAudio(mp3_file, executable=ffmpeg_path),
+                        after=lambda e: print(f"[TTS ERROR] {e}" if e else "[TTS] Finished"))
                 print(f"[TTS] Playing in {vc.channel.name}")
             except Exception as e:
-                print(f"[TTS ERROR] Failed to play audio: {e}")
-            
+                print(f"[TTS ERROR] Failed to play: {e}")
+            break
+                     
 async def ensure_police_rto():
     if SSD_ACTIVE:
         return  # don't join during SSD
