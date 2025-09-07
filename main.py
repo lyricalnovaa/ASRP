@@ -1412,6 +1412,39 @@ async def handle_10_8(speaker_callsign):
     units[speaker_callsign]["Locked_Until_10_8"] = False
     await send_dispatch_tts(f"{speaker_callsign} is now 10-8 and available.")
 
+@bot.command()
+async def tts_test(ctx, *, text: str = "Hello, this is a test"):
+    """Makes the bot say something in your VC."""
+    if ctx.author.voice and ctx.voice_client:
+        mp3_file = "test.mp3"
+
+        # Generate TTS
+        from google.cloud import texttospeech
+        client = texttospeech.TextToSpeechClient()
+        synthesis_input = texttospeech.SynthesisInput(text=text)
+        voice = texttospeech.VoiceSelectionParams(
+            language_code="en-US",
+            name="en-US-Wavenet-F",
+            ssml_gender=texttospeech.SsmlVoiceGender.FEMALE,
+        )
+        audio_config = texttospeech.AudioConfig(audio_encoding=texttospeech.AudioEncoding.MP3)
+        response = client.synthesize_speech(
+            input=synthesis_input, voice=voice, audio_config=audio_config
+        )
+
+        with open(mp3_file, "wb") as f:
+            f.write(response.audio_content)
+
+        # Play audio
+        ffmpeg_path = ensure_ffmpeg()
+        vc = ctx.voice_client
+        if vc.is_playing():
+            vc.stop()
+        vc.play(discord.FFmpegPCMAudio(mp3_file, executable=ffmpeg_path))
+        await ctx.send(f"🗣️ Speaking: {text}")
+    else:
+        await ctx.send("❌ You must be in a VC and the bot must already be connected.")
+
 if __name__ == '__main__':
     keep_alive()
     bot.run(TOKEN)
