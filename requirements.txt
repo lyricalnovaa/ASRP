@@ -5,4 +5,5 @@ google-cloud-texttospeech
 PyNaCl
 pyttsx3
 edge_tts
-llama_cpp
+transformers
+torch
