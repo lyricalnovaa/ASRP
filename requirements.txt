@@ -2,3 +2,4 @@ discord.py
 flask
 requests
 google-cloud-texttospeech
+PyNaCl
