@@ -8,6 +8,7 @@ import datetime
 from discord import FFmpegPCMAudio
 from google.cloud import texttospeech
 import re
+import tarfile
 
 
 RTO_CHANNEL_ID = 1341573057952878674
