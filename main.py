@@ -11,6 +11,8 @@ import re
 import tarfile
 import shutil
 import edge_tts
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
 
 RTO_CHANNEL_ID = 1341573057952878674
 # Load secrets from environment variables
@@ -1409,18 +1411,29 @@ async def tts_test(ctx, *, text):
     else:
         await ctx.send("❌ You must be in a VC to test TTS.")
         
-from llama_cpp import Llama
+MODEL_NAME = "EleutherAI/gpt-neo-125M"  # small, fast; you can swap for a larger instruct model if you have GPU
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+model = AutoModelForCausalLM.from_pretrained(MODEL_NAME)
 
-llm = Llama(model_path="mpt-7b-instruct.ggmlv3.q4_0.bin")
+def generate_dispatch_response(callsign, message_text, max_tokens=150):
+    """
+    Generate a dispatch-style AI response using Transformers
+    """
+    prompt = f"You are a police dispatcher AI. Respond naturally to officer {callsign}. Interpret any 10-codes mentioned in the message and respond as a dispatcher would.\nMessage: {message_text}\nDispatcher:"
+    inputs = tokenizer(prompt, return_tensors="pt")
+    
+    # Generate output
+    with torch.no_grad():
+        outputs = model.generate(**inputs, max_new_tokens=max_tokens)
+    
+    response_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    # Optionally strip the prompt from response
+    response_text = response_text.replace(prompt, "").strip()
+    return response_text
 
+# Async wrapper to integrate with your existing TTS function
 async def ai_dispatch_response(callsign, message_text):
-    prompt = f"""
-You are a police dispatcher AI. Respond naturally to the officer {callsign}.
-Interpret any 10-codes mentioned in the message and respond as a dispatcher would.
-Message: {message_text}
-"""
-    response = llm(prompt=prompt, max_tokens=150)
-    return response["choices"][0]["text"]
+    return generate_dispatch_response(callsign, message_text)
 
 async def ai_dispatch_tts(callsign, message_text):
     ai_text = await ai_dispatch_response(callsign, message_text)
