@@ -19,25 +19,39 @@ SSD_ACTIVE = False
 
 FFMPEG_DIR = "ffmpeg"
 FFMPEG_BINARY = os.path.join(FFMPEG_DIR, "ffmpeg")
-FFMPEG_URL = "https://github.com/lyricalnovaa/ASRP/releases/download/DiscordFFMPEG/ffmpeg"  # your release binary
-
-print(FFMPEG_BINARY)
+FFMPEG_URL = "https://github.com/lyricalnovaa/ASRP/releases/download/DiscordFFMPEG/ffmpeg-release-amd64-static.tar.xz?raw=true"
 
 def ensure_ffmpeg():
     if os.path.exists(FFMPEG_BINARY):
         return FFMPEG_BINARY
 
     os.makedirs(FFMPEG_DIR, exist_ok=True)
-    print("Downloading FFmpeg...")
+    tar_path = os.path.join(FFMPEG_DIR, "ffmpeg.tar.xz")
+    
+    print("Downloading FFmpeg tar.xz release...")
     r = requests.get(FFMPEG_URL, stream=True)
     r.raise_for_status()
-    with open(FFMPEG_BINARY, "wb") as f:
+    with open(tar_path, "wb") as f:
         for chunk in r.iter_content(chunk_size=8192):
             f.write(chunk)
-
+    
+    print("Extracting ffmpeg binary from tar...")
+    with tarfile.open(tar_path, "r:xz") as tar:
+        for member in tar.getmembers():
+            # Find the actual ffmpeg binary
+            if os.path.basename(member.name) == "ffmpeg":
+                tar.extract(member, FFMPEG_DIR)
+                extracted_path = os.path.join(FFMPEG_DIR, member.name)
+                shutil.move(extracted_path, FFMPEG_BINARY)
+                break
+    
+    os.remove(tar_path)  # cleanup tar
     os.chmod(FFMPEG_BINARY, 0o755)
     print("FFmpeg ready!")
     return FFMPEG_BINARY
+
+# Call it once at startup
+ensure_ffmpeg()
 
 
 # Check if TOKEN is set correctly
