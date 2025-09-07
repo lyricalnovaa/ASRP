@@ -1404,7 +1404,7 @@ async def tts_test(ctx, *, text):
             await ctx.voice_client.move_to(channel)
         else:
             await channel.connect()
-        await send_dispatch_tts(text)
+        await send_dispatch_tts(text)  # make sure this uses FFMPEG_BINARY
         await ctx.send("✅ TTS played!")
     else:
         await ctx.send("❌ You must be in a VC to test TTS.")
