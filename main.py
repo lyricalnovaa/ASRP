@@ -1367,6 +1367,26 @@ async def handle_10_8(speaker_callsign):
     units[speaker_callsign]["Locked_Until_10_8"] = False
     await send_dispatch_tts(f"{speaker_callsign} is now 10-8 and available.")
 
+@bot.command()
+async def play(ctx, url):
+    if not ctx.author.voice:
+        await ctx.send("You need to be in a VC first.")
+        return
+
+    channel = ctx.author.voice.channel
+
+    # Join if not already connected
+    if ctx.voice_client is None:
+        vc = await channel.connect()
+    else:
+        vc = ctx.voice_client
+        if vc.channel != channel:
+            await vc.move_to(channel)
+
+    # Now play
+    vc.stop()  # stop any current audio
+    vc.play(discord.FFmpegPCMAudio(source=url, executable="C:/ffmpeg/bin/ffmpeg.exe"))
+
 if __name__ == '__main__':
     keep_alive()
     bot.run(TOKEN)
