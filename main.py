@@ -23,34 +23,21 @@ SSD_ACTIVE = False
 
 FFMPEG_DIR = os.path.join(os.getcwd(), "ffmpeg")
 FFMPEG_BINARY = os.path.join(FFMPEG_DIR, "ffmpeg")
-FFMPEG_URL = "https://github.com/lyricalnovaa/ASRP/releases/download/DiscordFFMPEG/ffmpeg-release-amd64-static.tar.xz?raw=true"
+FFMPEG_URL = "https://drive.google.com/uc?export=download&id=1fBGqmBBi48V1gQwGIXs05SJA-LVjGDBu"  # direct download link
 
 def ensure_ffmpeg():
     if os.path.exists(FFMPEG_BINARY):
         return FFMPEG_BINARY
 
     os.makedirs(FFMPEG_DIR, exist_ok=True)
-    tar_path = os.path.join(FFMPEG_DIR, "ffmpeg.tar.xz")
 
-    # Download tar.xz release
-    print("Downloading FFmpeg tar.xz release...")
+    print("Downloading FFmpeg binary from Google Drive...")
     r = requests.get(FFMPEG_URL, stream=True)
     r.raise_for_status()
-    with open(tar_path, "wb") as f:
+    with open(FFMPEG_BINARY, "wb") as f:
         for chunk in r.iter_content(chunk_size=8192):
             f.write(chunk)
 
-    # Extract only the ffmpeg binary
-    print("Extracting ffmpeg binary from tar...")
-    with tarfile.open(tar_path, "r:xz") as tar:
-        ffmpeg_member = next((m for m in tar.getmembers() if os.path.basename(m.name) == "ffmpeg"), None)
-        if ffmpeg_member:
-            tar.extract(ffmpeg_member, FFMPEG_DIR)
-            # Flatten the path
-            extracted_path = os.path.join(FFMPEG_DIR, ffmpeg_member.name)
-            shutil.move(extracted_path, FFMPEG_BINARY)
-
-    os.remove(tar_path)  # cleanup tar
     os.chmod(FFMPEG_BINARY, 0o755)
     print("FFmpeg ready!")
     return FFMPEG_BINARY
