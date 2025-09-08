@@ -1,6 +1,6 @@
 import os
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 import requests
 from keep_alive import keep_alive
 import json
@@ -11,8 +11,6 @@ import re
 import tarfile
 import shutil
 import edge_tts
-from transformers import AutoModelForCausalLM, AutoTokenizer
-import torch
 import speech_recognition as sr
 import io
 import numpy as np
@@ -31,8 +29,6 @@ FFMPEG_BINARY = os.path.join(FFMPEG_DIR, "ffmpeg")
 FFMPEG_URL = "https://drive.google.com/uc?export=download&id=1fBGqmBBi48V1gQwGIXs05SJA-LVjGDBu"
 
 # Dictionary to hold the state of each unit (user)
-# The key is the user's Discord ID, and the value is a dictionary
-# containing their current state (e.g., callsign, status).
 UNITS = {}
 
 # Dictionary to hold voice channel objects to manage voice connections
@@ -78,40 +74,34 @@ def ensure_ffmpeg():
 # Global variable to hold the FFmpeg binary path
 FFMPEG_PATH = ensure_ffmpeg()
 
-# Initialize TTS and AI models
-try:
-    print("Loading AI model...")
-    MODEL_NAME = "microsoft/DialoGPT-medium"
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-    model = AutoModelForCausalLM.from_pretrained(MODEL_NAME)
-    print("AI model loaded successfully.")
-except Exception as e:
-    print(f"Error loading AI model: {e}")
-    tokenizer = None
-    model = None
+# Pre-defined dispatch responses for common codes
+DISPATCH_RESPONSES = {
+    "10-4": "Roger that, understood.",
+    "10-7": "Unit 10-7. Dispatched to standby.",
+    "10-8": "Unit 10-8, in service, clear.",
+    "10-20": "Please provide your location.",
+    "10-23": "Unit 10-23, standby.",
+    "10-99": "Unit 10-99, officer in distress. Requesting immediate assistance.",
+    "10-100": "Unit 10-100, requesting immediate backup.",
+    "standby": "Copy, standby.",
+    "in service": "Copy, in service.",
+    "show me available": "Roger, you are shown as available.",
+    "show me unavailable": "Roger, you are shown as unavailable.",
+    "show me in route": "Roger, you are shown as in route.",
+    "show me on scene": "Roger, you are shown as on scene.",
+}
 
-def generate_dispatch_response(callsign, message_text, max_tokens=150):
+def get_dispatch_response(callsign, message_text):
     """
-    Generate a dispatch-style AI response using Transformers
+    Generate a simple, rule-based dispatch response based on keywords.
     """
-    if not tokenizer or not model:
-        return "AI model is not available. Please check the logs."
+    for code, response in DISPATCH_RESPONSES.items():
+        if code in message_text.lower():
+            # If the code is found, use a pre-defined response
+            return f"{callsign}, {response}"
     
-    prompt = f"You are a police dispatcher AI. Respond naturally to officer {callsign}. Interpret any 10-codes mentioned in the message and respond as a dispatcher would.\nMessage: {message_text}\nDispatcher:"
-    inputs = tokenizer(prompt, return_tensors="pt")
-    
-    # Generate output
-    with torch.no_grad():
-        outputs = model.generate(**inputs, max_new_tokens=max_tokens)
-    
-    response_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    # Optionally strip the prompt from response
-    response_text = response_text.replace(prompt, "").strip()
-    return response_text
-
-# Async wrapper for the AI model
-async def ai_dispatch_response(callsign, message_text):
-    return generate_dispatch_response(callsign, message_text)
+    # If no specific code is found, provide a generic response
+    return f"{callsign}, received. Please state your code."
 
 # Text-to-speech function using edge-tts
 async def send_dispatch_tts(text):
@@ -139,9 +129,9 @@ async def send_dispatch_tts(text):
     except Exception as e:
         print(f"Error in TTS or audio playback: {e}")
 
-async def ai_dispatch_tts(callsign, message_text):
-    ai_text = await ai_dispatch_response(callsign, message_text)
-    await send_dispatch_tts(ai_text)
+async def rule_based_dispatch_tts(callsign, message_text):
+    response_text = get_dispatch_response(callsign, message_text)
+    await send_dispatch_tts(response_text)
 
 # ---------------- DISPATCH LOGIC ----------------
 def get_callsign(member):
@@ -178,7 +168,7 @@ async def process_voice_command(member, message_text):
     if "dispatch" in message_text.lower():
         command_text = message_text.lower().split("dispatch", 1)[-1].strip()
         print(f"Command detected from {callsign}: '{command_text}'")
-        await ai_dispatch_tts(callsign, command_text)
+        await rule_based_dispatch_tts(callsign, command_text)
 
 def transcribe_audio_from_bytes(audio_bytes, sample_rate, sample_width):
     """
@@ -192,8 +182,6 @@ def transcribe_audio_from_bytes(audio_bytes, sample_rate, sample_width):
         print(f"Transcription result: {text}")
         return text
     except sr.UnknownValueError:
-        # This is expected when there's no speech, so we don't need a noisy printout
-        # print("Google Speech Recognition could not understand audio")
         return ""
     except sr.RequestError as e:
         print(f"Could not request results from Google Speech Recognition service; {e}")
@@ -204,22 +192,17 @@ async def voice_listener(voice_client):
     Listens to audio from a voice channel and transcribes it.
     """
     
-    # This loop continuously listens for voice
     while voice_client.is_connected():
         try:
-            # The bot listens for a 3-second segment of audio
             print("Listening for 3 seconds...")
             audio_data = await asyncio.wait_for(voice_client.listen(timeout=3.0), timeout=3.5)
             
-            # Convert Opus-encoded data to PCM
             pcm_data = audio_data.get_converted_audio()
             
-            # Find the member who spoke
             member = audio_data.member
             if not member:
                 continue
 
-            # Transcribe the audio
             text = await asyncio.to_thread(
                 transcribe_audio_from_bytes,
                 pcm_data.getvalue(),
@@ -232,7 +215,6 @@ async def voice_listener(voice_client):
                 await process_voice_command(member, text)
 
         except asyncio.TimeoutError:
-            # This is normal; it just means no one spoke in the 3 seconds
             pass
         except Exception as e:
             print(f"An error occurred during voice transcription: {e}")
@@ -253,10 +235,8 @@ async def on_ready():
                 print(f"Attempting to join RTO channel: {channel.name}")
                 voice_client = await channel.connect()
             
-            # Store the voice client
             VOICE_CLIENTS[RTO_CHANNEL_ID] = voice_client
             
-            # Start the voice listener
             bot.loop.create_task(voice_listener(voice_client))
         else:
             print(f"RTO channel with ID {RTO_CHANNEL_ID} not found or is not a voice channel.")
@@ -281,7 +261,6 @@ async def join(ctx):
             await ctx.send(f"An error occurred: {e}")
     else:
         await ctx.send("You are not in a voice channel.")
-
 if __name__ == '__main__':
     keep_alive()
     bot.run(TOKEN)
