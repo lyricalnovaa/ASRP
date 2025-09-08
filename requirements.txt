@@ -2,7 +2,3 @@ discord.py
 flask
 requests
 PyNaCl
-pyttsx3
-edge_tts
-torch
-SpeechRecognition
