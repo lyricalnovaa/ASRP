@@ -7,7 +7,6 @@ import json
 import datetime
 import asyncio
 from discord import FFmpegPCMAudio
-from google.cloud import texttospeech
 import re
 import tarfile
 import shutil
