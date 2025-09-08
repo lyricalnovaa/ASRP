@@ -4,6 +4,5 @@ requests
 PyNaCl
 pyttsx3
 edge_tts
-transformers
 torch
 SpeechRecognition
