@@ -1,9 +1,9 @@
 discord.py
 flask
 requests
-google-cloud-texttospeech
 PyNaCl
 pyttsx3
 edge_tts
 transformers
 torch
+SpeechRecognition
