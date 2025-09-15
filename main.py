@@ -703,7 +703,9 @@ async def apps(ctx):
                    ("Arkansas Department of Transportation (ARDOT)",
                     "https://forms.gle/LRwzmcjNKcA72jNy7"),
                    ("Crawford County Dispatch (CCD)",
-                    "https://forms.gle/fvD86WHo1oiuBAf8A")]
+                    "https://forms.gle/fvD86WHo1oiuBAf8A"),
+                   ("Staff Application (AS:RP | Staff)",
+                    "https://docs.google.com/forms/d/e/1FAIpQLSd6U96Pg-PfCEAAVJ9TTfK6W7dRjY4p4qayGkZKXbAbtGWCMw/viewform")]
 
     for name, link in departments:
         embed = discord.Embed(
