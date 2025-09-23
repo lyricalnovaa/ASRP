@@ -131,7 +131,7 @@ async def msg(ctx, user: discord.User, *, message: str):
         await ctx.send(f"Messaged {user.name}.")
 
 @bot.command()
-@commands.has_role('ASRP | HR Team')
+@command.has_role('ASRP | HR Team')
 async def speccodes(ctx):
     """Displays the list of available spec codes."""
     embed = discord.Embed(title="🚨 Special Codes 🚨",
