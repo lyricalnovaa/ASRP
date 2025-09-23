@@ -113,7 +113,7 @@ DEPARTMENT_INVITES = {
 mod_notes = {}
 msg_notes = {}
 
-MESSAGE_NOTES_FILE = 'MSGS.json
+MESSAGE_NOTES_FILE = 'MSGS.json'
 
 
 
