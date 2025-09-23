@@ -119,7 +119,7 @@ MESSAGE_NOTES_FILE = 'MSGS.json'
 
 
 @bot.command()
-@commands.has_role('ASRP | HR Team')
+@is_hr()
 async def msg(ctx, user: discord.User, *, message: str):
     """Sends a message to a specific user."""
     try:
@@ -136,7 +136,7 @@ async def msg(ctx, user: discord.User, *, message: str):
         )
 
 @bot.command()
-@commands.has_role('ASRP | HR Team')
+@is_hr()
 async def speccodes(ctx):
     """Displays the list of available spec codes."""
     embed = discord.Embed(title="🚨 Special Codes 🚨",
@@ -157,7 +157,7 @@ async def speccodes(ctx):
 
 
 @bot.command()
-@commands.has_role('ASRP | HR Team')
+@is_hr()
 async def codes(ctx):
     """Command to send all priority codes in an embed and ping @everyone."""
 
