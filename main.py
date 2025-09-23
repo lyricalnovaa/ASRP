@@ -121,20 +121,15 @@ MESSAGE_NOTES_FILE = 'MSGS.json'
 @bot.command()
 @command.has_role('ASRP | HR Team')
 async def msg(ctx, user: discord.User, *, message: str):
-     """Sends a message to a specific user."""
+    """Sends a message to a specific user."""
     try:
-        embed = discord.Embed(
-            title=f"Message From {user}!",
-            description=
-            f"Message: \n"
-            f"{message}"
-            color=discord.Color.blue())
+        embed = discord.Embed(title=f"Message From {user}!",description=f"Message: \n" f"{message}"color=discord.Color.blue())
         embed.set_footer(text=f"- ASRP | {user}")
         await user.send(embed=embed)
 
         save_msg_note(user, message)
         await ctx.send(f"Messaged {user.name}.")
-        )
+
 @bot.command()
 @commands.has_role('ASRP | HR Team')
 async def speccodes(ctx):
