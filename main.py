@@ -130,6 +130,11 @@ async def msg(ctx, user: discord.User, *, message: str):
         save_msg_note(user, message)
         await ctx.send(f"Messaged {user.name}.")
 
+    except discord.Forbidden:
+        await ctx.send(
+            f"Could not send DM to {user.name}. Please ensure they have DMs open."
+        )
+
 @bot.command()
 @command.has_role('ASRP | HR Team')
 async def speccodes(ctx):
