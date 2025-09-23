@@ -119,7 +119,7 @@ MESSAGE_NOTES_FILE = 'MSGS.json'
 
 
 @bot.command()
-@command.has_role('ASRP | HR Team)
+@command.has_role('ASRP | HR Team')
 async def msg(ctx, user: discord.User, *, message: str):
      """Sends a message to a specific user."""
     try:
