@@ -123,7 +123,7 @@ MESSAGE_NOTES_FILE = 'MSGS.json'
 async def msg(ctx, user: discord.User, *, message: str):
     """Sends a message to a specific user."""
     try:
-        embed = discord.Embed(title=f"Message From {user}!",description=f"Message: \n" f"{message}"color=discord.Color.blue())
+        embed = discord.Embed(title=f"Message From {user}!",description=f"Message: \n" f"{message}", color=discord.Color.blue())
         embed.set_footer(text=f"- ASRP | {user}")
         await user.send(embed=embed)
 
