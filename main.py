@@ -49,6 +49,7 @@ guild_whitelist = [
 ]
 
 
+
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user}')
@@ -110,8 +111,30 @@ DEPARTMENT_INVITES = {
 }
 
 mod_notes = {}
+msg_notes = {}
+
+MESSAGE_NOTES_FILE = 'MSGS.json
 
 
+
+
+@bot.command()
+@command.has_role('ASRP | HR Team)
+async def msg(ctx, user: discord.User, *, message: str):
+     """Sends a message to a specific user."""
+    try:
+        embed = discord.Embed(
+            title=f"Message From {user}!",
+            description=
+            f"Message: \n"
+            f"{message}"
+            color=discord.Color.blue())
+        embed.set_footer(text=f"- ASRP | {user}")
+        await user.send(embed=embed)
+
+        save_msg_note(user, message)
+        await ctx.send(f"Messaged {user.name}.")
+        )
 @bot.command()
 @commands.has_role('ASRP | HR Team')
 async def speccodes(ctx):
@@ -359,6 +382,12 @@ async def partnershipdeny(ctx, user: discord.User, community_name: str, *,
 
 MOD_NOTES_FILE = "mod_notes.json"
 
+def load_msg_notes():
+    try:
+        with open(MESSAGE_NOTES_FILE, "r") as file:
+            return json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
 
 def load_mod_notes():
     try:
@@ -372,9 +401,44 @@ def save_mod_notes(mod_notes):
     with open(MOD_NOTES_FILE, "w") as file:
         json.dump(mod_notes, file, indent=4)
 
+def save_msg_notes(msg_notes):
+    with open(MSG_NOTES_FILE, "w") as file:
+        json.dump(msg_notes, file, indent=4)
+
+
+def save_msg_note(user_id, command_type, message):
+    if user_id not in msg_notes:
+        msg_notes[user_id] = []
+    msg_notes[user_id].append((command_type, message))
 
 mod_notes = load_mod_notes()
+msg_notes = load_msg_notes()
 
+@bot.command()
+@is_hr()
+@commands.has_permissions(manage_messages=True)
+async def msgs(ctx, user: discord.User = None):
+    """Retrieves all stored message notes for a specific user."""
+
+    if user is None:
+        await ctx.send("Please mention a user to check their moderator notes.")
+        return
+
+    user_notes = msg_notes.get(str(user.id), [])
+
+    if not user_notes:
+        await ctx.send(f"No moderator notes found for {user.name}.")
+        return
+
+    embed = discord.Embed(title=f"Messages for {user.name}",
+                          color=discord.Color.blue())
+
+    for command_type, msg in user_notes:
+        embed.add_field(name=f"{command_type.capitalize()}",
+                        value=msg,
+                        inline=False)
+
+    await ctx.send(embed=embed)
 
 @bot.command()
 @is_hr()
@@ -401,7 +465,6 @@ async def modnote(ctx, user: discord.User = None):
                         inline=False)
 
     await ctx.send(embed=embed)
-
 
 def save_mod_note(user_id, command_type, note):
     """Saves a moderator note for a user."""
