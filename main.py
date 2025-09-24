@@ -509,7 +509,7 @@ async def promote(ctx, user: discord.User, old_role_id: int,
     # Mention the staff team (replace `@Staff Team` with actual staff role)
     staff_role = discord.utils.get(ctx.guild.roles, name="Staff Team")
     if staff_role:
-        embed.set_footer(text=f"ASRP | {ctx.author.name")
+        embed.set_footer(text=f"ASRP | {ctx.author.name}")
 
     await ctx.send(embed=embed)
 
