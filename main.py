@@ -536,7 +536,7 @@ ROLE_IDS = {
 
 @bot.command()
 @is_hr()
-async def infract(ctx, user: discord.User, current_rank_id: int, callsign: str, punishment: str, reason: str, *, notes: str, approved_by: discord.User):
+async def infract(ctx, user: discord.User, current_rank_id: int, callsign: str, *, punishment: str, reason: str, notes: str, approved_by: discord.User):
     """infract a user and notify the staff team."""
 
     # Check if the user has the old role
