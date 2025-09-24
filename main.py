@@ -557,12 +557,13 @@ async def infract(ctx, user: discord.User, current_rank_id: int, callsign: str, 
 
     # Initialize role to be added
     role_to_add = None
-
+    formatted_punishment = " "
     # Logic to handle different punishments based on the punishment string
     if "strike" in punishment.lower():
         # Handle strikes
         try:
             strike_number = int(punishment.lower().replace("strike", "").strip())
+            formatted_punishment = f"Strike {strike_number}"
         except ValueError:
             await ctx.send(f"Invalid strike format. Please use 'Strike 1', 'Strike 2', or 'Strike 3'.")
             return
@@ -588,6 +589,7 @@ async def infract(ctx, user: discord.User, current_rank_id: int, callsign: str, 
         # Handle warnings
         try:
             warning_number = int(punishment.lower().replace("warning", "").strip() or 1)
+            formatted_punishment = f"Warning {warning_number}"
         except ValueError:
             await ctx.send(f"Invalid warning format. Please use 'Warning 1', 'Warning 2', or 'Warning 3'.")
             return
@@ -627,7 +629,7 @@ async def infract(ctx, user: discord.User, current_rank_id: int, callsign: str, 
         embed.add_field(name="Current Rank:", value=current_rank.name, inline=False)
     
     embed.add_field(name="Callsign", value=callsign, inline=False)
-    embed.add_field(name="Punishment", value=punishment.capitalize(), inline=False)
+    embed.add_field(name="Punishment", value=formatted_punishment, inline=False)
     embed.add_field(name="--------------------", value="", inline=False)
     embed.add_field(name="Notes:", value=notes, inline=False)
     embed.add_field(name="Approved by:", value=f"<@{approved_by.id}>", inline=False)
