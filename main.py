@@ -497,21 +497,143 @@ async def promote(ctx, user: discord.User, old_role_id: int,
     embed = discord.Embed(title="Role Promotion",
                           description=f"**{user.name}** has been promoted!",
                           color=discord.Color.green())
-    embed.add_field(name="Supervising Officer:", value=ctx.author.name, inline=False)
-    embed.add_field(name="Username:", value=user.name, inline=False)
+    embed.add_field(name="Supervising Officer:", value=f"<@{ctx.author.id}>", inline=False)
+    embed.add_field(name="Username:", value=f"<@{user.id}>", inline=False)
     embed.add_field(name="Old Rank:", value=old_role.name, inline=False)
     embed.add_field(name="New Rank:", value=new_role.name, inline=False)
     embed.add_field(name="Callsign", value=callsign, inline=False)
     embed.add_field(name="--------------------", value="", inline=False)
     embed.add_field(name="Notes:", value=notes, inline=False)
-    embed.add_field(name="Approved by:", value=approved_by.name, inline=False)
+    embed.add_field(name="Approved by:", value=f"<@{approved_by.id}>", inline=False)
 
     # Mention the staff team (replace `@Staff Team` with actual staff role)
     staff_role = discord.utils.get(ctx.guild.roles, name="Staff Team")
     if staff_role:
-        embed.set_footer(text=f"Staff Team: {staff_role.mention}")
+        embed.set_footer(text=f"ASRP | {ctx.author.name")
 
-    await ctx.send(f"@{staff_role.name} Role promotion details:", embed=embed)
+    await ctx.send(embed=embed)
+
+ROLE_IDS = {
+    # FSPD GUILD
+    1342350523046690836: {
+        "warning1": 1342350523059277825,
+        "warning2": 1342350523059277824,
+        "warning3": 1342350523046690845,
+        "strike1": 1342350523059277829,
+        "strike2": 1342350523059277828,
+        "strike3": 1342350523059277827,
+    },
+    # VBPD GUILD 
+    1344866545997840506: {
+        "warning1": 1344866545997840515,
+        "warning2": 1344866545997840514,
+        "warning3": 1344866545997840513,
+        "strike1": 1344866546014486634,
+        "strike2": 1344866546014486633,
+        "strike3": 1344866546014486632,
+    }
+}
+
+@bot.command()
+@is_hr()
+async def infract(ctx, user: discord.User, current_rank_id: int, callsign: str, punishment: str, reason: str, *, notes: str, approved_by: discord.User):
+    """infract a user and notify the staff team."""
+
+    # Check if the user has the old role
+    # Check if the guild is in our ROLE_IDS dictionary
+    guild_id = ctx.guild.id
+    if guild_id not in ROLE_IDS:
+        await ctx.send("This server is not configured for the infraction command.")
+        return
+
+    # Get the member object for the user
+    member = ctx.guild.get_member(user.id)
+    if not member:
+        await ctx.send("Could not find that member in this server.")
+        return
+
+    # Get the role IDs for the current server
+    current_guild_roles = ROLE_IDS[guild_id]
+
+    # Initialize role to be added
+    role_to_add = None
+
+    # Logic to handle different punishments based on the punishment string
+    if "strike" in punishment.lower():
+        # Handle strikes
+        try:
+            strike_number = int(punishment.lower().replace("strike", "").strip())
+        except ValueError:
+            await ctx.send(f"Invalid strike format. Please use 'Strike 1', 'Strike 2', or 'Strike 3'.")
+            return
+
+        # Determine which role to add
+        if strike_number == 1:
+            role_to_add = discord.utils.get(ctx.guild.roles, id=current_guild_roles.get("strike1"))
+        elif strike_number == 2:
+            role_to_add = discord.utils.get(ctx.guild.roles, id=current_guild_roles.get("strike2"))
+        elif strike_number == 3:
+            role_to_add = discord.utils.get(ctx.guild.roles, id=current_guild_roles.get("strike3"))
+        else:
+            await ctx.send("Invalid strike number. Please use 1, 2, or 3.")
+            return
+
+        if not role_to_add:
+            await ctx.send("Invalid strike role ID provided for this server.")
+            return
+
+        await member.add_roles(role_to_add)
+
+    elif "warning" in punishment.lower():
+        # Handle warnings
+        try:
+            warning_number = int(punishment.lower().replace("warning", "").strip() or 1)
+        except ValueError:
+            await ctx.send(f"Invalid warning format. Please use 'Warning 1', 'Warning 2', or 'Warning 3'.")
+            return
+
+        # Determine which role to add
+        if warning_number == 1:
+            role_to_add = discord.utils.get(ctx.guild.roles, id=current_guild_roles.get("warning1"))
+        elif warning_number == 2:
+            role_to_add = discord.utils.get(ctx.guild.roles, id=current_guild_roles.get("warning2"))
+        elif warning_number == 3:
+            role_to_add = discord.utils.get(ctx.guild.roles, id=current_guild_roles.get("warning3"))
+        else:
+            await ctx.send("Invalid warning number. Please use 1, 2, or 3.")
+            return
+
+        if not role_to_add:
+            await ctx.send("Invalid warning role ID provided for this server.")
+            return
+
+        await member.add_roles(role_to_add)
+
+    else:
+        await ctx.send(f"Punishment type '{punishment}' not recognized. Please use 'Strike 1', 'Strike 2', 'Strike 3', 'Warning 1', 'Warning 2', or 'Warning 3'.")
+        return
+        
+    # Get the current rank based on the provided ID
+    current_rank = discord.utils.get(ctx.guild.roles, id=current_rank_id)
+
+    # Build the embed to notify the staff team
+    embed = discord.Embed(title="Infraction",
+                          description=f"**<@{user.id}>** has been infracted!",
+                          color=discord.Color.red()) # Use red for infractions
+    embed.add_field(name="Supervising Officer:", value=f"<@{ctx.author.id}>", inline=False)
+    embed.add_field(name="Username:", value=f"<@{user.id}>", inline=False)
+    
+    if current_rank:
+        embed.add_field(name="Current Rank:", value=current_rank.name, inline=False)
+    
+    embed.add_field(name="Callsign", value=callsign, inline=False)
+    embed.add_field(name="Punishment", value=punishment.capitalize(), inline=False)
+    embed.add_field(name="--------------------", value="", inline=False)
+    embed.add_field(name="Notes:", value=notes, inline=False)
+    embed.add_field(name="Approved by:", value=f"<@{approved_by.id}>", inline=False)
+    
+    # The content is now empty, as there is no staff ping
+    await ctx.send(embed=embed)
 
 
 @bot.command()
