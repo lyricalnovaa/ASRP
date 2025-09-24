@@ -472,11 +472,10 @@ def save_mod_note(user_id, command_type, note):
         mod_notes[user_id] = []
     mod_notes[user_id].append((command_type, note))
 
-
 @bot.command()
 @is_hr()
-async def promote(ctx, user: discord.User, roblox_id: int, old_role_id: int,
-                  new_role_id: int, reason: str, notes: str,
+async def promote(ctx, user: discord.User, old_role_id: int,
+                  new_role_id: int, callsign: str, notes: str,
                   approved_by: discord.User):
     """Promote a user and notify the staff team."""
 
@@ -498,18 +497,12 @@ async def promote(ctx, user: discord.User, roblox_id: int, old_role_id: int,
     embed = discord.Embed(title="Role Promotion",
                           description=f"**{user.name}** has been promoted!",
                           color=discord.Color.green())
-    embed.add_field(name="My Username:", value=ctx.author.name, inline=False)
-    embed.add_field(name="My Discord ID:", value=ctx.author.id, inline=False)
-    embed.add_field(name="Their Username:", value=user.name, inline=False)
-    embed.add_field(name="Their Discord ID:", value=user.id, inline=False)
-
-    # Assuming you also get the Roblox ID from a custom system or database
-    # Example: Roblox ID can be fetched here
-    embed.add_field(name="Their Roblox ID:", value=roblox_id, inline=False)
-
+    embed.add_field(name="Supervising Officer:", value=ctx.author.name, inline=False)
+    embed.add_field(name="Username:", value=user.name, inline=False)
     embed.add_field(name="Old Rank:", value=old_role.name, inline=False)
     embed.add_field(name="New Rank:", value=new_role.name, inline=False)
-    embed.add_field(name="Reason:", value=reason, inline=False)
+    embed.add_field(name="Callsign", value=callsign, inline=False)
+    embed.add_field(name="--------------------", value="", inline=False)
     embed.add_field(name="Notes:", value=notes, inline=False)
     embed.add_field(name="Approved by:", value=approved_by.name, inline=False)
 
