@@ -689,24 +689,24 @@ async def ssu_poll(ctx, votes_required: int):
                          if str(r.emoji) == "✅")
 
     # SSU approved, send notification
-    embed = discord.Embed(
+    embed2 = discord.Embed(
         title="Server Start Up Notification",
         description=
         f"✅ SSU Approved! {votes_required} votes reached!\n{ctx.author.mention} has started the session.",
         color=discord.Color.green())
-    embed.add_field(name="Server Information",
+    embed2.add_field(name="Server Information",
                     value="■▬✶▬▬▬▬▬▬▬◢◤◆◥◣▬▬▬▬▬▬▬✶▬■",
                     inline=False)
-    embed.add_field(name="Server Owner", value="guavajuice3006", inline=True)
-    embed.add_field(name="Server Name",
+    embed2.add_field(name="Server Owner", value="guavajuice3006", inline=True)
+    embed2.add_field(name="Server Name",
                     value="Arkansas State Roleplay I VC Only",
                     inline=True)
-    embed.add_field(name="Server Join Code", value="ARKSTATE", inline=True)
-    embed.add_field(name="■▬✶▬▬▬▬▬▬▬◢◤◆◥◣▬▬▬▬▬▬▬✶▬■",
+    embed2.add_field(name="Server Join Code", value="ARKSTATE", inline=True)
+    embed2.add_field(name="■▬✶▬▬▬▬▬▬▬◢◤◆◥◣▬▬▬▬▬▬▬✶▬■",
                     value="\u200b",
                     inline=False)
 
-    await ctx.send("@here", embed=embed)
+    await ctx.send("@here", embed=embed2)
 
 
 @bot.command()
