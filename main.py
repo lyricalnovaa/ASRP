@@ -476,7 +476,7 @@ def save_mod_note(user_id, command_type, note):
 @is_hr()
 async def promote(ctx, user: discord.User, old_role_id: int,
                   new_role_id: int, callsign: str,
-                  approved_by: discord.User), *, notes: str):
+                  approved_by: discord.User, *, notes: str):
     """Promote a user and notify the staff team."""
 
     # Check if the user has the old role
